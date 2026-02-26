@@ -288,9 +288,7 @@ def page_data_download():
     raw_dir.mkdir(parents=True, exist_ok=True)
 
     # Tab 1: Single Ticker Download
-    tab1, tab2, tab3 = st.tabs(
-        ["📊 Single Ticker", "📈 VIX Data", "📦 Batch Download"]
-    )
+    tab1, tab2, tab3 = st.tabs(["📊 Single Ticker", "📈 VIX Data", "📦 Batch Download"])
 
     with tab1:
         st.subheader("Download Stock Data")
@@ -316,13 +314,15 @@ def page_data_download():
             else:
                 with st.spinner(f"Downloading {ticker_upper} ({period})..."):
                     try:
-                        df = yf.download(
-                            ticker_upper, period=period, progress=False
-                        )
+                        df = yf.download(ticker_upper, period=period, progress=False)
 
                         if df.empty:
                             st.error(f"No data found for ticker: {ticker_upper}")
                         else:
+                            # Handle multi-level columns (yfinance returns Ticker/Price index)
+                            if isinstance(df.columns, pd.MultiIndex):
+                                df.columns = df.columns.droplevel(0)
+                            
                             # Rename columns to match expected format
                             df = df.rename(
                                 columns={
@@ -361,6 +361,10 @@ def page_data_download():
                     if vix.empty:
                         st.error("No VIX data available")
                     else:
+                        # Handle multi-level columns
+                        if isinstance(vix.columns, pd.MultiIndex):
+                            vix.columns = vix.columns.droplevel(0)
+                        
                         # Rename columns
                         vix = vix.rename(
                             columns={
@@ -423,6 +427,10 @@ def page_data_download():
                         df = yf.download(ticker, period=batch_period, progress=False)
 
                         if not df.empty:
+                            # Handle multi-level columns
+                            if isinstance(df.columns, pd.MultiIndex):
+                                df.columns = df.columns.droplevel(0)
+                            
                             # Rename columns
                             df = df.rename(
                                 columns={
@@ -453,7 +461,9 @@ def page_data_download():
                 status_text.empty()
                 progress_bar.empty()
 
-                st.success(f"✓ Successfully downloaded {success_count}/{len(tickers)} tickers")
+                st.success(
+                    f"✓ Successfully downloaded {success_count}/{len(tickers)} tickers"
+                )
 
                 if error_list:
                     st.warning("Errors encountered:")
