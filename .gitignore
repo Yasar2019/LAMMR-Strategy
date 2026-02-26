@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+venv/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+lammr.log
+
+# Data
+data/raw/*.csv
+data/orders/*.csv
+data/backtest/*.csv
+!data/raw/examples/
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Temporary
+.streamlit/cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment variables
+.env
+.env.local

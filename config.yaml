@@ -1,0 +1,42 @@
+# LAMMR Strategy Configuration
+
+# Data & Time
+data_dir: "data/raw"
+orders_dir: "data/orders"
+backtest_dir: "data/backtest"
+db_path: "lammr.db"
+timezone: "UTC"
+
+# Z-Score Signal Settings
+zscore_lookback: 20          # Rolling window for Z-score calculation
+zscore_buy_threshold: -1.5   # Buy when Z-score < this (oversold)
+zscore_sell_threshold: 1.5   # Sell when Z-score > this (overbought)
+zscore_exit_threshold: 0.3   # Exit when Z-score crosses this (mean reversion)
+
+# Liquidity & Filtering
+min_volume_ma: 100000        # Minimum 20-bar average volume
+volume_filter_lookback: 20
+liquidity_weight: 0.3        # Weight of liquidity in composite score
+zscore_weight: 0.7           # Weight of Z-score in composite score
+min_confidence: 0.65         # Minimum composite score to trade
+
+# Position Sizing & Risk
+position_size_pct: 0.02      # 2% of account per trade
+max_positions: 10            # Maximum concurrent positions
+max_position_size_pct: 5.0   # Max 5% of account in single position
+max_drawdown_pct: 15.0       # Stop trading if DD > this
+trailing_stop_pct: 2.0       # Stop loss at X% below entry
+
+# Backtest & Costs
+slippage_bps: 1              # Slippage in basis points (0.01%)
+commission_bps: 1            # Commission in basis points
+stock_initial_capital: 100000  # Starting capital for backtest
+
+# Backtest Date Range (YYYY-MM-DD)
+backtest_start_date: "2022-01-01"
+backtest_end_date: "2025-12-31"
+
+# Alerts & Monitoring
+alert_threshold_sharpe: 0.5  # Alert if rolling Sharpe < this
+alert_threshold_dd: 12.0     # Alert if drawdown > this
+consecutive_loss_limit: 5    # Alert after N losses in a row
