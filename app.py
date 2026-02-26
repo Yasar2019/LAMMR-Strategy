@@ -321,16 +321,22 @@ def page_data_download():
                         else:
                             # Handle multi-level columns (yfinance returns (PriceType, Ticker))
                             if isinstance(df.columns, pd.MultiIndex):
-                                # Drop the ticker level, keep price level
                                 df.columns = df.columns.droplevel(1)
                             
                             # Rename columns to lowercase
                             df.columns = df.columns.str.lower()
                             
                             # Select and reorder columns
-                            df = df[["open", "high", "low", "close", "volume"]]
+                            df = df[["open", "high", "low", "close", "volume"]].copy()
+                            
+                            # Ensure correct data types
+                            for col in ["open", "high", "low", "close"]:
+                                df[col] = pd.to_numeric(df[col], errors='coerce')
+                            df["volume"] = pd.to_numeric(df["volume"], errors='coerce').astype('Int64')
+                            
                             df.index.name = "date"
                             df = df.reset_index()
+                            df["date"] = df["date"].astype(str)
 
                             # Save to CSV
                             csv_path = raw_dir / f"{ticker_upper}.csv"
@@ -364,6 +370,23 @@ def page_data_download():
                         vix.columns = vix.columns.str.lower()
                         
                         # Select and reorder columns
+                        vix = vix[["open", "high", "low", "close", "volume"]].copy()
+                        
+                        # Ensure correct data types
+                        for col in ["open", "high", "low", "close"]:
+                            vix[col] = pd.to_numeric(vix[col], errors='coerce')
+                        vix["volume"] = pd.to_numeric(vix["volume"], errors='coerce').astype('Int64')
+                        
+                        vix.index.name = "date"
+                        vix = vix.reset_index()
+                        vix["date"] = vix["date"].astype(str)
+
+                        # Save to CSV
+                        csv_path = raw_dir / "vix.csv"
+                        vix.to_csv(csv_path, index=False)
+
+                        st.success(f"✓ Downloaded {len(vix)} rows to {csv_path}")
+
                         # Preview
                         st.subheader("VIX Data Preview")
                         st.dataframe(vix.tail(10), use_container_width=True)
@@ -414,6 +437,22 @@ def page_data_download():
                             df.columns = df.columns.str.lower()
                             
                             # Select and reorder columns
+                            df = df[["open", "high", "low", "close", "volume"]].copy()
+                            
+                            # Ensure correct data types
+                            for col in ["open", "high", "low", "close"]:
+                                df[col] = pd.to_numeric(df[col], errors='coerce')
+                            df["volume"] = pd.to_numeric(df["volume"], errors='coerce').astype('Int64')
+                            
+                            df.index.name = "date"
+                            df = df.reset_index()
+                            df["date"] = df["date"].astype(str)
+
+                            # Save to CSV
+                            csv_path = raw_dir / f"{ticker}.csv"
+                            df.to_csv(csv_path, index=False)
+                            success_count += 1
+                        else:
                             error_list.append(f"{ticker}: No data found")
 
                     except Exception as e:
