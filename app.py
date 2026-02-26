@@ -36,6 +36,7 @@ page = st.sidebar.radio(
         "Portfolio",
         "Monitoring",
         "Settings",
+        "Data Download",
         "Run Agents",
     ],
 )
@@ -272,6 +273,199 @@ def page_settings():
     st.info("To modify settings, edit `config.yaml` and reload the app.")
 
 
+def page_data_download():
+    """Download market data from Yahoo Finance."""
+    st.title("📥 Download Market Data")
+
+    try:
+        import yfinance as yf
+    except ImportError:
+        st.error("⚠️ yfinance not installed. Install with: `pip install yfinance`")
+        return
+
+    # Ensure data/raw directory exists
+    raw_dir = Path("data/raw")
+    raw_dir.mkdir(parents=True, exist_ok=True)
+
+    # Tab 1: Single Ticker Download
+    tab1, tab2, tab3 = st.tabs(
+        ["📊 Single Ticker", "📈 VIX Data", "📦 Batch Download"]
+    )
+
+    with tab1:
+        st.subheader("Download Stock Data")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            ticker = st.text_input(
+                "Enter Ticker Symbol", value="AAPL", key="single_ticker"
+            )
+
+        with col2:
+            period = st.selectbox(
+                "Period",
+                ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y", "max"],
+                index=3,
+                key="single_period",
+            )
+
+        if st.button("📥 Download Stock Data", use_container_width=True):
+            ticker_upper = ticker.upper().strip()
+            if not ticker_upper:
+                st.error("Please enter a valid ticker symbol")
+            else:
+                with st.spinner(f"Downloading {ticker_upper} ({period})..."):
+                    try:
+                        df = yf.download(
+                            ticker_upper, period=period, progress=False
+                        )
+
+                        if df.empty:
+                            st.error(f"No data found for ticker: {ticker_upper}")
+                        else:
+                            # Rename columns to match expected format
+                            df = df.rename(
+                                columns={
+                                    "Open": "open",
+                                    "High": "high",
+                                    "Low": "low",
+                                    "Close": "close",
+                                    "Volume": "volume",
+                                }
+                            )
+                            df = df[["open", "high", "low", "close", "volume"]]
+                            df.index.name = "date"
+                            df = df.reset_index()
+
+                            # Save to CSV
+                            csv_path = raw_dir / f"{ticker_upper}.csv"
+                            df.to_csv(csv_path, index=False)
+
+                            st.success(f"✓ Downloaded {len(df)} rows to {csv_path}")
+
+                            # Preview
+                            st.subheader("Data Preview")
+                            st.dataframe(df.tail(10), use_container_width=True)
+
+                    except Exception as e:
+                        st.error(f"Error downloading {ticker_upper}: {str(e)}")
+
+    with tab2:
+        st.subheader("Download VIX Data")
+
+        if st.button("📥 Download VIX Data", use_container_width=True):
+            with st.spinner("Downloading VIX..."):
+                try:
+                    vix = yf.download("^VIX", period="2y", progress=False)
+
+                    if vix.empty:
+                        st.error("No VIX data available")
+                    else:
+                        # Rename columns
+                        vix = vix.rename(
+                            columns={
+                                "Open": "open",
+                                "High": "high",
+                                "Low": "low",
+                                "Close": "close",
+                                "Volume": "volume",
+                            }
+                        )
+                        vix = vix[["open", "high", "low", "close", "volume"]]
+                        vix.index.name = "date"
+                        vix = vix.reset_index()
+
+                        # Save to CSV
+                        csv_path = raw_dir / "vix.csv"
+                        vix.to_csv(csv_path, index=False)
+
+                        st.success(f"✓ Downloaded {len(vix)} rows to {csv_path}")
+
+                        # Preview
+                        st.subheader("VIX Data Preview")
+                        st.dataframe(vix.tail(10), use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Error downloading VIX: {str(e)}")
+
+    with tab3:
+        st.subheader("Batch Download Multiple Tickers")
+
+        batch_text = st.text_area(
+            "Enter ticker symbols (one per line)",
+            value="AAPL\nMSFT\nGOOG\nAMZN\nTSLA",
+            height=150,
+            key="batch_tickers",
+        )
+
+        batch_period = st.selectbox(
+            "Period for batch download",
+            ["1mo", "3mo", "6mo", "1y", "2y", "5y", "10y"],
+            index=3,
+            key="batch_period",
+        )
+
+        if st.button("📦 Download All Tickers", use_container_width=True):
+            tickers = [t.strip().upper() for t in batch_text.split("\n") if t.strip()]
+
+            if not tickers:
+                st.error("No tickers entered")
+            else:
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                success_count = 0
+                error_list = []
+
+                for idx, ticker in enumerate(tickers):
+                    status_text.text(f"Downloading {ticker}...")
+
+                    try:
+                        df = yf.download(ticker, period=batch_period, progress=False)
+
+                        if not df.empty:
+                            # Rename columns
+                            df = df.rename(
+                                columns={
+                                    "Open": "open",
+                                    "High": "high",
+                                    "Low": "low",
+                                    "Close": "close",
+                                    "Volume": "volume",
+                                }
+                            )
+                            df = df[["open", "high", "low", "close", "volume"]]
+                            df.index.name = "date"
+                            df = df.reset_index()
+
+                            # Save to CSV
+                            csv_path = raw_dir / f"{ticker}.csv"
+                            df.to_csv(csv_path, index=False)
+                            success_count += 1
+                        else:
+                            error_list.append(f"{ticker}: No data found")
+
+                    except Exception as e:
+                        error_list.append(f"{ticker}: {str(e)}")
+
+                    # Update progress
+                    progress_bar.progress((idx + 1) / len(tickers))
+
+                status_text.empty()
+                progress_bar.empty()
+
+                st.success(f"✓ Successfully downloaded {success_count}/{len(tickers)} tickers")
+
+                if error_list:
+                    st.warning("Errors encountered:")
+                    for error in error_list:
+                        st.write(f"  • {error}")
+
+                st.subheader("Files Saved")
+                csv_files = sorted(raw_dir.glob("*.csv"))
+                for csv_file in csv_files:
+                    st.write(f"  ✓ {csv_file.name}")
+
+
 def page_run_agents():
     """Run agents page."""
     st.title("🚀 Run Agents")
@@ -355,6 +549,8 @@ elif page == "Monitoring":
     page_monitoring()
 elif page == "Settings":
     page_settings()
+elif page == "Data Download":
+    page_data_download()
 elif page == "Run Agents":
     page_run_agents()
 
