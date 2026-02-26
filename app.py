@@ -319,20 +319,15 @@ def page_data_download():
                         if df.empty:
                             st.error(f"No data found for ticker: {ticker_upper}")
                         else:
-                            # Handle multi-level columns (yfinance returns Ticker/Price index)
+                            # Handle multi-level columns (yfinance returns (PriceType, Ticker))
                             if isinstance(df.columns, pd.MultiIndex):
-                                df.columns = df.columns.droplevel(0)
+                                # Drop the ticker level, keep price level
+                                df.columns = df.columns.droplevel(1)
                             
-                            # Rename columns to match expected format
-                            df = df.rename(
-                                columns={
-                                    "Open": "open",
-                                    "High": "high",
-                                    "Low": "low",
-                                    "Close": "close",
-                                    "Volume": "volume",
-                                }
-                            )
+                            # Rename columns to lowercase
+                            df.columns = df.columns.str.lower()
+                            
+                            # Select and reorder columns
                             df = df[["open", "high", "low", "close", "volume"]]
                             df.index.name = "date"
                             df = df.reset_index()
@@ -363,28 +358,12 @@ def page_data_download():
                     else:
                         # Handle multi-level columns
                         if isinstance(vix.columns, pd.MultiIndex):
-                            vix.columns = vix.columns.droplevel(0)
+                            vix.columns = vix.columns.droplevel(1)
                         
-                        # Rename columns
-                        vix = vix.rename(
-                            columns={
-                                "Open": "open",
-                                "High": "high",
-                                "Low": "low",
-                                "Close": "close",
-                                "Volume": "volume",
-                            }
-                        )
-                        vix = vix[["open", "high", "low", "close", "volume"]]
-                        vix.index.name = "date"
-                        vix = vix.reset_index()
-
-                        # Save to CSV
-                        csv_path = raw_dir / "vix.csv"
-                        vix.to_csv(csv_path, index=False)
-
-                        st.success(f"✓ Downloaded {len(vix)} rows to {csv_path}")
-
+                        # Rename columns to lowercase
+                        vix.columns = vix.columns.str.lower()
+                        
+                        # Select and reorder columns
                         # Preview
                         st.subheader("VIX Data Preview")
                         st.dataframe(vix.tail(10), use_container_width=True)
@@ -429,27 +408,12 @@ def page_data_download():
                         if not df.empty:
                             # Handle multi-level columns
                             if isinstance(df.columns, pd.MultiIndex):
-                                df.columns = df.columns.droplevel(0)
+                                df.columns = df.columns.droplevel(1)
                             
-                            # Rename columns
-                            df = df.rename(
-                                columns={
-                                    "Open": "open",
-                                    "High": "high",
-                                    "Low": "low",
-                                    "Close": "close",
-                                    "Volume": "volume",
-                                }
-                            )
-                            df = df[["open", "high", "low", "close", "volume"]]
-                            df.index.name = "date"
-                            df = df.reset_index()
-
-                            # Save to CSV
-                            csv_path = raw_dir / f"{ticker}.csv"
-                            df.to_csv(csv_path, index=False)
-                            success_count += 1
-                        else:
+                            # Rename columns to lowercase
+                            df.columns = df.columns.str.lower()
+                            
+                            # Select and reorder columns
                             error_list.append(f"{ticker}: No data found")
 
                     except Exception as e:
