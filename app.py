@@ -283,9 +283,36 @@ def page_data_download():
         st.error("⚠️ yfinance not installed. Install with: `pip install yfinance`")
         return
 
+    import time
+    
     # Ensure data/raw directory exists
     raw_dir = Path("data/raw")
     raw_dir.mkdir(parents=True, exist_ok=True)
+    
+    def safe_download(ticker_symbol, period, max_retries=2):
+        """Download with retry logic for API issues."""
+        for attempt in range(max_retries):
+            try:
+                # Add timeout and other parameters for stability
+                df = yf.download(
+                    ticker_symbol, 
+                    period=period, 
+                    progress=False,
+                    timeout=30
+                )
+                if df.empty:
+                    return None, "No data found"
+                return df, None
+            except Exception as e:
+                error_msg = str(e)
+                if "Expecting value" in error_msg or "No price data" in error_msg:
+                    if attempt < max_retries - 1:
+                        time.sleep(2)  # Wait before retry
+                        continue
+                    return None, "Yahoo Finance API unavailable or rate limited. Try again in a few moments."
+                else:
+                    return None, error_msg
+        return None, "Download failed after retries"
 
     # Tab 1: Single Ticker Download
     tab1, tab2, tab3 = st.tabs(["📊 Single Ticker", "📈 VIX Data", "📦 Batch Download"])
@@ -322,18 +349,20 @@ def page_data_download():
                             # Handle multi-level columns (yfinance returns (PriceType, Ticker))
                             if isinstance(df.columns, pd.MultiIndex):
                                 df.columns = df.columns.droplevel(1)
-                            
+
                             # Rename columns to lowercase
                             df.columns = df.columns.str.lower()
-                            
+
                             # Select and reorder columns
                             df = df[["open", "high", "low", "close", "volume"]].copy()
-                            
+
                             # Ensure correct data types
                             for col in ["open", "high", "low", "close"]:
-                                df[col] = pd.to_numeric(df[col], errors='coerce')
-                            df["volume"] = pd.to_numeric(df["volume"], errors='coerce').astype('Int64')
-                            
+                                df[col] = pd.to_numeric(df[col], errors="coerce")
+                            df["volume"] = pd.to_numeric(
+                                df["volume"], errors="coerce"
+                            ).astype("Int64")
+
                             df.index.name = "date"
                             df = df.reset_index()
                             df["date"] = df["date"].astype(str)
@@ -365,18 +394,20 @@ def page_data_download():
                         # Handle multi-level columns
                         if isinstance(vix.columns, pd.MultiIndex):
                             vix.columns = vix.columns.droplevel(1)
-                        
+
                         # Rename columns to lowercase
                         vix.columns = vix.columns.str.lower()
-                        
+
                         # Select and reorder columns
                         vix = vix[["open", "high", "low", "close", "volume"]].copy()
-                        
+
                         # Ensure correct data types
                         for col in ["open", "high", "low", "close"]:
-                            vix[col] = pd.to_numeric(vix[col], errors='coerce')
-                        vix["volume"] = pd.to_numeric(vix["volume"], errors='coerce').astype('Int64')
-                        
+                            vix[col] = pd.to_numeric(vix[col], errors="coerce")
+                        vix["volume"] = pd.to_numeric(
+                            vix["volume"], errors="coerce"
+                        ).astype("Int64")
+
                         vix.index.name = "date"
                         vix = vix.reset_index()
                         vix["date"] = vix["date"].astype(str)
@@ -432,18 +463,20 @@ def page_data_download():
                             # Handle multi-level columns
                             if isinstance(df.columns, pd.MultiIndex):
                                 df.columns = df.columns.droplevel(1)
-                            
+
                             # Rename columns to lowercase
                             df.columns = df.columns.str.lower()
-                            
+
                             # Select and reorder columns
                             df = df[["open", "high", "low", "close", "volume"]].copy()
-                            
+
                             # Ensure correct data types
                             for col in ["open", "high", "low", "close"]:
-                                df[col] = pd.to_numeric(df[col], errors='coerce')
-                            df["volume"] = pd.to_numeric(df["volume"], errors='coerce').astype('Int64')
-                            
+                                df[col] = pd.to_numeric(df[col], errors="coerce")
+                            df["volume"] = pd.to_numeric(
+                                df["volume"], errors="coerce"
+                            ).astype("Int64")
+
                             df.index.name = "date"
                             df = df.reset_index()
                             df["date"] = df["date"].astype(str)
